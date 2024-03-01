@@ -101,9 +101,10 @@ def display_map(locations):
 
 
 def submit():
+    # Generate the prompt
     prompt = generate_prompt(**st.session_state)
 
-    # generate output
+    # Generate output
     output = openai.Completion.create(
         engine='text-davinci-003',
         prompt=prompt,
@@ -114,16 +115,25 @@ def submit():
         max_tokens=1024
     )
 
+    # Store the generated itinerary
     st.session_state['output'] = output['choices'][0]['text']
 
     # Load possible POIs from CSV
     possible_pois = load_possible_pois('possible_pois.csv')
     
-    # Extract points of interest
-    locations = extract_points_of_interest(output['choices'][0]['text'], possible_pois)
-    
-    # Display map with points of interest
-    display_map(locations)
+    # Split the generated itinerary into individual days
+    days = st.session_state['output'].split('\n\n')
+
+    # Display maps for each day
+    for i, day in enumerate(days, start=1):
+        st.subheader(f'Day {i} Itinerary:')
+        st.write(day)
+
+        # Extract points of interest for the current day
+        locations = extract_points_of_interest(day, possible_pois)
+
+        # Display map with points of interest for the current day
+        display_map(locations)
 
 
 # Initialization
