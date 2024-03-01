@@ -45,12 +45,27 @@ Prepare trip schedule for {destination}, based on the following information:
 '''.strip()
 
 
-def extract_points_of_interest(itinerary_text):
-    # Extract points of interest from the itinerary text
-    # You may need to use NLP techniques or specific keywords to identify POIs
-    # For simplicity, let's assume we're extracting location names
-    locations = [x.strip() for x in itinerary_text.split('\n') if x.strip()]
-    return locations
+def extract_points_of_interest(itinerary_text, possible_pois):
+    # Extract points of interest from the itinerary text based on a set of possible POIs
+    # Filter out POIs that are not present in the set of possible POIs
+    
+    # Split the itinerary text into lines
+    lines = itinerary_text.split('\n')
+    
+    # Initialize a list to store the extracted POIs
+    pois = []
+    
+    # Iterate through each line in the itinerary text
+    for line in lines:
+        # Remove leading and trailing whitespace from the line
+        line = line.strip()
+        
+        # Check if the line is not empty and is in the set of possible POIs
+        if line and line in possible_pois:
+            pois.append(line)
+    
+    return pois
+
 
 
 def display_map(locations):
