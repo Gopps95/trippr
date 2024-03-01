@@ -6,6 +6,7 @@ import streamlit as st
 from dotenv import load_dotenv
 from geopy.geocoders import Nominatim
 import folium
+import csv
 
 load_dotenv()
 
@@ -67,6 +68,18 @@ def extract_points_of_interest(itinerary_text, possible_pois):
     return pois
 
 
+def load_possible_pois(csv_file_path):
+    # Load possible POIs from a CSV file
+    pois = set()
+    with open(csv_file_path, 'r', newline='', encoding='utf-8') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            poi = row.get('POI')
+            if poi:
+                pois.add(poi.strip())  # Remove leading/trailing whitespace
+    
+    return pois
+
 
 def display_map(locations):
     # Create a folium map object
@@ -103,8 +116,11 @@ def submit():
 
     st.session_state['output'] = output['choices'][0]['text']
 
+    # Load possible POIs from CSV
+    possible_pois = load_possible_pois('possible_pois.csv')
+    
     # Extract points of interest
-    locations = extract_points_of_interest(output['choices'][0]['text'])
+    locations = extract_points_of_interest(output['choices'][0]['text'], possible_pois)
     
     # Display map with points of interest
     display_map(locations)
