@@ -50,6 +50,9 @@ def extract_points_of_interest(itinerary_text, possible_pois):
     # Extract points of interest from the itinerary text based on a set of possible POIs
     # Filter out POIs that are not present in the set of possible POIs
     
+    # Convert possible POIs to lowercase
+    possible_pois_lower = {poi.lower() for poi in possible_pois}
+    
     # Split the itinerary text into lines
     lines = itinerary_text.split('\n')
     
@@ -61,11 +64,15 @@ def extract_points_of_interest(itinerary_text, possible_pois):
         # Remove leading and trailing whitespace from the line
         line = line.strip()
         
+        # Convert the line to lowercase for comparison
+        line_lower = line.lower()
+        
         # Check if the line is not empty and is in the set of possible POIs
-        if line and line in possible_pois:
+        if line_lower and line_lower in possible_pois_lower:
             pois.append(line)
     
     return pois
+
 
 
 def load_possible_pois(csv_file_path):
