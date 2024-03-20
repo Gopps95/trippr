@@ -13,6 +13,43 @@ import math
 from geopy.geocoders import Nominatim
 
 load_dotenv()
+streamlit_style = """
+			<style>
+			  @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;1,100&display=swap');
+
+			  .hotel-bold {
+			    font-weight: 600;
+			  }
+
+			  .hotel-font {
+			    font-size: 20px;
+          background-color: #e6f9ff;
+			  }
+
+			  label.css-1p2iens.effi0qh3{
+			    font-size: 18px;
+			  }
+
+			  p{
+			    font-size: 18px;
+			  }
+        li{
+          font-size: 18px;
+        }		
+        #MainMenu{
+        visibility: hidden;
+        }	  
+        button.css-135zi6y.edgvbvh9{
+        font-size: 18px;
+        font-weight: 600;
+        }
+			  
+			</style>
+			"""
+
+st.markdown(streamlit_style, unsafe_allow_html=True)
+
+st.image('./assets/Group.png')
 
 openai.api_key = os.getenv('OPENAI_API_KEY')  # Replace with your actual API key
 geolocator = Nominatim(user_agent="trip-planner")
