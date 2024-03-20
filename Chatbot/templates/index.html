@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chatbot</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div id="chat-container">
+        <div id="chat-messages"></div>
+        <input type="text" id="user-input" placeholder="Type your message...">
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $('#user-input').on('keypress', function(e) {
+                if (e.which == 13) {
+                    sendMessage();
+                }
+            });
+        });
+
+        function sendMessage() {
+            var userInput = $('#user-input').val();
+            $('#user-input').val('');
+
+            $.ajax({
+                type: 'POST',
+                url: '/chat',
+                data: {'user_input': userInput},
+                success: function(response) {
+                    displayMessage('You: ' + userInput);
+                    displayMessage('Chatbot: ' + response);
+                }
+            });
+        }
+
+        function displayMessage(message) {
+            var messageElement = $('<div></div>').text(message);
+            $('#chat-messages').append(messageElement);
+        }
+    </script>
+</body>
+</html>
