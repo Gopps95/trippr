@@ -11,14 +11,50 @@ import requests
 import streamlit.components.v1 as components
 import math
 from geopy.geocoders import Nominatim
+import spacy
 
 load_dotenv()
+streamlit_style = """
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;1,100&display=swap');
+
+              .hotel-bold {
+                font-weight: 600;
+              }
+
+              .hotel-font {
+                font-size: 20px;
+                background-color: #e6f9ff;
+              }
+
+              label.css-1p2iens.effi0qh3{
+                font-size: 18px;
+              }
+
+              p{
+                font-size: 18px;
+              }
+              li{
+                font-size: 18px;
+              }        
+              #MainMenu{
+                visibility: hidden;
+              }   
+              button.css-135zi6y.edgvbvh9{
+                font-size: 18px;
+                font-weight: 600;
+              }
+            </style>
+            """
+
+st.markdown(streamlit_style, unsafe_allow_html=True)
+
+st.image('./assets/Group.png')
 
 openai.api_key = os.getenv('OPENAI_API_KEY')  # Replace with your actual API key
 geolocator = Nominatim(user_agent="trip-planner")
 
 # Load spaCy NER model
-import spacy
 nlp = spacy.load("en_core_web_sm")
 
 # Constants
@@ -48,13 +84,13 @@ Include visits to popular attractions like Fort Kochi, Mattancherry Palace, Cher
 Also, provide detailed daily route recommendations for exploring the destination while considering factors like traffic, weather, and distance between locations.
 '''.strip()
 
-def extract_points_of_interest(itinerary_text):
-    pois = []
-    doc = nlp(itinerary_text)
+def extract_locations(text):
+    doc = nlp(text)
+    locations = []
     for ent in doc.ents:
-        if ent.label_ == "GPE":
-            pois.append(ent.text.strip())
-    return pois
+        if ent.label_ == "GPE":  # GPE stands for Geopolitical Entity (countries, cities, states)
+            locations.append(ent.text)
+    return locations
 
 def generate_google_maps_link(location_route, loc_df):
     location_route_names = [loc_df[loc_df['Latitude'] == lat]['Place_Name'].values[0].replace(' ', '+')
@@ -178,24 +214,25 @@ def submit():
 
     num_days = (st.session_state['departure_date'] - st.session_state['arrival_date']).days + 1
 
-    # Extract locations from the itinerary
-    locations = extract_points_of_interest(itinerary)
-    location_names = [loc.replace(' ', '+') for loc in locations]
-    geocoded_locations = [(loc, *geocode_address(loc)[1:]) for loc in locations]
-    loc_df = pd.DataFrame(geocoded_locations, columns=['Place_Name', 'Latitude', 'Longitude'])
-
-    # Create the data model for the TSP solver
-    data_model = create_data_model([(row['Latitude'], row['Longitude']) for _, row in loc_df.iterrows()])
-
-    # Solve the TSP problem and get the optimal route
-    location_route = tsp_solver(data_model)
-
     # Display itinerary for each day
     for i, day in enumerate(days[1:num_days+1], start=1):
         day_itinerary = day.strip()
 
         st.subheader(f'Day {i} Itinerary:')
         st.write(day_itinerary)
+
+        # Extract locations from the current day's itinerary
+        day_locations = extract_locations(day_itinerary)
+
+        # Geocode the locations
+        geocoded_locations = [(loc, *geocode_address(loc)[1:]) for loc in day_locations]
+        loc_df = pd.DataFrame(geocoded_locations, columns=['Place_Name', 'Latitude', 'Longitude'])
+
+        # Create the data model for the TSP solver
+        data_model = create_data_model([(row['Latitude'], row['Longitude']) for _, row in loc_df.iterrows()])
+
+        # Solve the TSP problem and get the optimal route
+        location_route = tsp_solver(data_model)
 
         # Generate and display Google Maps link with optimal route for the current day
         gmap_link = generate_google_maps_link(location_route, loc_df)
