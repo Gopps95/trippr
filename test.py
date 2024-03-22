@@ -404,19 +404,31 @@ def submit():
         st.write(f'[Google Maps Link for Day {i} Itinerary]({gmap_link})')
 
 # Initialization
+# Remove the second form definition
+# Initialization
+# Other imports and code...
+
+# Initialization
 if 'output' not in st.session_state:
     st.session_state['output'] = '--'
 
-st.title('Trippr')
+st.title('GPT-3 Trip Scheduler')
 st.subheader('Let us plan your trip!')
 
+# Initialization
+if 'output' not in st.session_state:
+    st.session_state['output'] = '--'
+
+st.title('GPT-3 Trip Scheduler')
+st.subheader('Let us plan your trip!')
+
+# Define the form outside the columns
 with st.form(key='trip_form'):
     c1, c2, c3 = st.columns(3)
 
     with c1:
         st.subheader('Destination')
         origin = st.text_input('Destination', value=random.choice(EXAMPLE_DESTINATIONS), key='destination')
-        st.form_submit_button('Submit', on_click=submit)
 
     with c2:
         st.subheader('Arrival')
@@ -440,34 +452,12 @@ with st.form(key='trip_form'):
                  value='I want to visit as many places as possible! (respect time)',
                  key='additional_information')
 
-    st.subheader('Trip Schedule')
-    st.write(st.session_state.output)
-    with c1:
-        st.subheader('Destination')
-        origin = st.text_input('Destination', value=random_destination, key='destination')
-        st.form_submit_button('Submit', on_click=generate_itinerary)
+    # Add a submit button
+    submitted = st.form_submit_button("Generate Itinerary")
 
-    with c2:
-        st.subheader('Arrival')
+    if submitted:
+        generate_itinerary()
 
-        st.selectbox('Arrival To',
-                     ('Airport', 'Train Station', 'Bus Station', 'Ferry Terminal', 'Port', 'Other'),
-                     key='arrival_to')
-        st.date_input('Arrival Date', value=now_date, key='arrival_date')
-        st.time_input('Arrival Time', value=now_time, key='arrival_time')
-
-    with c3:
-        st.subheader('Departure')
-
-        st.selectbox('Departure From',
-                     ('Airport', 'Train Station', 'Bus Station', 'Ferry Terminal', 'Port', 'Other'),
-                     key='departure_from')
-        st.date_input('Departure Date', value=now_date + timedelta(days=1), key='departure_date')
-        st.time_input('Departure Time', value=now_time, key='departure_time')
-
-    st.text_area('Additional Information', height=200,
-                 value='I want to visit as many places as possible! (respect time)',
-                 key='additional_information')
-
-    st.subheader('Trip Schedule')
-    st.write(st.session_state.output)
+# Display the output
+st.subheader('Trip Schedule')
+st.write(st.session_state.output)
