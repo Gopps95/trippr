@@ -78,10 +78,8 @@ Prepare a {num_days}-day trip schedule for {destination}, a vibrant city in the 
 * Departure Time: {departure_time}
 
 * Additional Notes: {additional_information}
-
-Include visits to popular attractions like Fort Kochi, Mattancherry Palace, Cherai Beach, and the backwaters of Kumarakom. Recommend opportunities to experience local cuisine, art forms like Kathakali, and shopping for spices and handicrafts.
-
-Also, provide detailed daily route recommendations for exploring the destination while considering factors like traffic, weather, and distance between locations.
+Please create a detailed daily itinerary that includes visits to popular attractions 
+Provide specific route recommendations for each day, including transportation options and estimated travel times.
 '''.strip()
 
 def extract_locations(text):
