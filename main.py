@@ -67,7 +67,7 @@ def generate_prompt(destination, arrival_to, arrival_date, arrival_time, departu
                     departure_date, departure_time, additional_information, **kwargs):
     num_days = (departure_date - arrival_date).days + 1
     return f'''
-Prepare a {num_days}-day trip schedule for {destination}, a vibrant city in the Indian state of Kerala, known for its rich cultural heritage, breathtaking backwaters, and diverse culinary delights. Here are the details:
+Prepare a {num_days}-day trip schedule for {destination}, Here are the details:
 
 * Arrival To: {arrival_to}
 * Arrival Date: {arrival_date}
@@ -78,8 +78,6 @@ Prepare a {num_days}-day trip schedule for {destination}, a vibrant city in the 
 * Departure Time: {departure_time}
 
 * Additional Notes: {additional_information}
-Please create a detailed daily itinerary that includes visits to popular attractions 
-Provide specific route recommendations for each day, including transportation options and estimated travel times.
 '''.strip()
 
 def extract_locations(text):
@@ -103,6 +101,12 @@ def tsp_solver(data_model, iterations=1000, temperature=10000, cooling_rate=0.95
 
     num_locations = data_model['num_locations']
     locations = [(float(lat), float(lng)) for lat, lng in data_model['locations']]
+
+    # Handle the case when there is only one location or no locations
+    if num_locations == 1:
+        return locations
+    elif num_locations == 0:
+        return []
 
     # Randomly generate a starting solution
     current_solution = list(range(num_locations))
