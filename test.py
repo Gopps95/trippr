@@ -14,6 +14,8 @@ from geopy.geocoders import Nominatim
 import spacy
 from spacy.util import filter_spans
 
+# Load the spaCy NER model with the 'ner' pipeline enabled
+nlp = spacy.load("en_core_web_sm")
 load_dotenv()
 streamlit_style = """
             <style>
@@ -56,7 +58,7 @@ openai.api_key = os.getenv('OPENAI_API_KEY')  # Replace with your actual API key
 geolocator = Nominatim(user_agent="trip-planner")
 
 # Load spaCy NER model
-nlp = spacy.load("en_core_web_sm")
+
 
 # Constants
 EXAMPLE_DESTINATIONS = [
@@ -81,16 +83,23 @@ Prepare a {num_days}-day trip schedule for {destination}, Here are the details:
 * Additional Notes: {additional_information}
 '''.strip()
 
+
 def extract_locations(text):
     # Disable other pipeline components to improve performance
-    with nlp.disable_pipes("tok2vec", "trf_wordpiecer", "trf_tok2vec"):
+    with nlp.disable_pipes("tok2vec", "tagger", "parser", "senter", "attribute_ruler", "lemmatizer"):
         doc = nlp(text)
 
     # Extract entities with the 'GPE' (Geopolitical Entity) and 'LOC' (Location) labels
-    entities = [ent.text for ent in doc.ents if ent.label_ in ['GPE', 'LOC']]
+    entities = [ent for ent in doc.ents if ent.label_ in ['GPE', 'LOC']]
+
+    # Convert entities to spans
+    entity_spans = [doc.char_span(ent.start_char, ent.end_char) for ent in entities]
 
     # Filter out duplicates and overlapping entities
-    filtered_entities = filter_spans(entities)
+    filtered_spans = filter_spans(entity_spans)
+
+    # Extract entity texts from filtered spans
+    filtered_entities = [span.text for span in filtered_spans]
 
     return list(set(filtered_entities))
 
