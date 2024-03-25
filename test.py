@@ -12,6 +12,7 @@ import streamlit.components.v1 as components
 import math
 from geopy.geocoders import Nominatim
 import spacy
+from spacy.util import filter_spans
 
 load_dotenv()
 streamlit_style = """
@@ -81,12 +82,17 @@ Prepare a {num_days}-day trip schedule for {destination}, Here are the details:
 '''.strip()
 
 def extract_locations(text):
-    doc = nlp(text)
-    locations = []
-    for ent in doc.ents:
-        if ent.label_ == "GPE":  # GPE stands for Geopolitical Entity (countries, cities, states)
-            locations.append(ent.text)
-    return locations
+    # Disable other pipeline components to improve performance
+    with nlp.disable_pipes("tok2vec", "trf_wordpiecer", "trf_tok2vec"):
+        doc = nlp(text)
+
+    # Extract entities with the 'GPE' (Geopolitical Entity) and 'LOC' (Location) labels
+    entities = [ent.text for ent in doc.ents if ent.label_ in ['GPE', 'LOC']]
+
+    # Filter out duplicates and overlapping entities
+    filtered_entities = filter_spans(entities)
+
+    return list(set(filtered_entities))
 
 def generate_google_maps_link(location_route, loc_df):
     location_route_names = [loc_df[loc_df['Latitude'] == lat]['Place_Name'].values[0].replace(' ', '+')
