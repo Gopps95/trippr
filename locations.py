@@ -11,5 +11,7 @@ LOCATIONS = {
     'Alappuzha': ['Alappuzha Beach', 'Backwaters', 'Houseboats', 'Nehru Trophy Boat Race'],
     'Thrissur': ['Vadakkunnathan Temple', 'Thrissur Pooram', 'Archaeological Museum'],
     'Kottayam': ['Kumaranalloor', 'Kumarakom Bird Sanctuary', 'Vembanad Lake'],
-    'Idukki': ['Idukki Wildlife Sanctuary', 'Meesapulimala', 'Kalvari Mount', 'Idukki Dam']
+    'Idukki': ['Idukki Wildlife Sanctuary', 'Meesapulimala', 'Kalvari Mount', 'Idukki Dam'],
+    'Kochi': ['Kochi Marina', 'Mattancherry Palace', 'Fort Kochi Beach', 'Chinese Fishing Nets', 'Jew Town', 'Bolgatty Palace', 'Veeranpuzha Beach', 'Princess Street', 'Willingdon Island'],
+    'Ernakulam District': ['Ernakulam', 'Fort Kochi', 'Mattancherry', 'Cherai Beach', 'Munnar', 'Thekkady', 'Athirappilly', 'Kumarakom', 'Marari Beach', 'Alappuzha', 'Thrissur', 'Kottayam', 'Idukki']
 }
