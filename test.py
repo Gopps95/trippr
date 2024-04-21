@@ -13,6 +13,8 @@ import math
 from geopy.geocoders import Nominatim
 import spacy
 from locations import LOCATIONS
+from itertools import permutations
+
 load_dotenv()
 streamlit_style = """
             <style>
@@ -109,7 +111,6 @@ def generate_google_maps_link(location_route, loc_df):
     gmap_places = gmap_search + '/'.join(unique_route_names) + '/'
     return gmap_places
 
-
 def tsp_solver(data_model, iterations=1000, temperature=10000, cooling_rate=0.95):
     def distance(point1, point2):
         return math.sqrt((point1[0]-point2[0])**2 + (point1[1]-point2[1])**2)
@@ -172,7 +173,7 @@ def tsp_solver(data_model, iterations=1000, temperature=10000, cooling_rate=0.95
     # Return the optimal route
     location_route = [locations[i] for i in optimal_route]
     return location_route
-
+# Caching the distance matrix calculation for better performance
 # Caching the distance matrix calculation for better performance
 @st.cache_data
 def compute_distance_matrix(locations):
@@ -209,7 +210,6 @@ def geocode_address(address):
             print(f'Geocode was not successful. No results found for address: {address}')
     else:
         print('Failed to get a response from the geocoding API.')
-
 def submit():
     # Generate the prompt
     unique_locations = extract_locations(st.session_state['output'])
@@ -237,7 +237,6 @@ def submit():
         day_itinerary = day.strip()
 
         st.subheader(f'Day {i} Itinerary:')
-        st.write(day_itinerary)
 
         # Extract locations from the current day's itinerary
         day_locations = extract_locations(day_itinerary)
@@ -252,10 +251,14 @@ def submit():
         # Solve the TSP problem and get the optimal route
         location_route = tsp_solver(data_model)
 
+        # Generate the optimized itinerary for the current day
+        optimized_itinerary = ' - '.join([loc_df[loc_df['Latitude'] == lat]['Place_Name'].values[0] for lat, lon in location_route])
+
+        st.write(optimized_itinerary)
+
         # Generate and display Google Maps link with optimal route for the current day
         gmap_link = generate_google_maps_link(location_route, loc_df)
         st.write(f'[Google Maps Link for Day {i} Itinerary]({gmap_link})')
-
 # Initialization
 if 'output' not in st.session_state:
     st.session_state['output'] = '--'
