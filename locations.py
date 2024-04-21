@@ -1,6 +1,6 @@
 LOCATIONS = {
     'Ernakulam': ['Ernakulam District', 'Ernakulam Town', 'Marine Drive', 'Hill Palace Museum', 'Dutch Cemetery', 'LuLu Mall', 'Jawaharlal Nehru International Stadium', 'Mangalavanam Bird Sanctuary', 'Veegaland Waterpark', 'Wonder La Amusement Park'],
-    'Fort Kochi': ['Bastion Bungalow', 'Fort Kochi', 'Santa Cruz Basilica', 'Dutch Palace', 'Jewish Synagogue', 'Chinese Fishing Nets', 'Aspinwall House'],
+    'Fort Kochi': ['Bastion Bungalow', 'Fort Kochi', 'Santa Cruz Basilica', 'Dutch Palace', 'Jewish Synagogue', 'Chinese Fishing Nets', 'Aspinwall House','Santa Cruz Cathedral Basilica'],
     'Mattancherry': ['Mattancherry Palace', 'Dutch Cemetery', 'Spice Market'],
     'Cherai Beach': ['Cherai Beach', 'Cherai Beach Resort'],
     'Munnar': ['Munnar', 'Eravikulam National Park', 'Tea Gardens', 'Mattupetty Dam', 'Echo Point'],

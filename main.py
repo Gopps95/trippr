@@ -64,8 +64,9 @@ EXAMPLE_DESTINATIONS = [
 ]
 
 def generate_prompt(destination, arrival_to, arrival_date, arrival_time, departure_from,
-                    departure_date, departure_time, additional_information, **kwargs):
+                    departure_date, departure_time, additional_information, unique_locations, **kwargs):
     num_days = (departure_date - arrival_date).days + 1
+    unique_locations_str = ', '.join(unique_locations)
     return f'''
 Prepare a {num_days}-day trip schedule for {destination}, Here are the details:
 
@@ -78,6 +79,8 @@ Prepare a {num_days}-day trip schedule for {destination}, Here are the details:
 * Departure Time: {departure_time}
 
 * Additional Notes: {additional_information}
+
+Unique locations to visit: {unique_locations_str}
 '''.strip()
 def extract_locations(text):
     locations = []
@@ -85,16 +88,27 @@ def extract_locations(text):
         if location.lower() in text.lower():
             locations.append(location)
             for poi in pois:
-                if poi.lower() in text.lower():
+                if poi.lower() in text.lower() and poi not in locations:
                     locations.append(poi)
     return list(set(locations))
 
 def generate_google_maps_link(location_route, loc_df):
     location_route_names = [loc_df[loc_df['Latitude'] == lat]['Place_Name'].values[0].replace(' ', '+')
                             for lat, lon in location_route]
+    
+    # Exclude 'Ernakulam' and 'Kochi' from the route names
+    location_route_names = [name for name in location_route_names if name.lower() not in ['ernakulam', 'kochi']]
+    
+    # Remove duplicates from the route names
+    unique_route_names = []
+    for name in location_route_names:
+        if name not in unique_route_names:
+            unique_route_names.append(name)
+    
     gmap_search = 'https://www.google.com/maps/dir/+'
-    gmap_places = gmap_search + '/'.join(location_route_names) + '/'
+    gmap_places = gmap_search + '/'.join(unique_route_names) + '/'
     return gmap_places
+
 
 def tsp_solver(data_model, iterations=1000, temperature=10000, cooling_rate=0.95):
     def distance(point1, point2):
@@ -198,7 +212,8 @@ def geocode_address(address):
 
 def submit():
     # Generate the prompt
-    prompt = generate_prompt(**st.session_state)
+    unique_locations = extract_locations(st.session_state['output'])
+    prompt = generate_prompt(unique_locations=unique_locations, **st.session_state)
 
     # Generate output
     output = openai.Completion.create(
