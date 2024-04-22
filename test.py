@@ -198,7 +198,6 @@ def compute_distance_matrix(locations):
             distance_matrix[i][j] = distance
             distance_matrix[j][i] = distance
     return distance_matrix
-
 def create_data_model(locations, exclude_locations=None):
     data = {}
     num_locations = len(locations)
