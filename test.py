@@ -61,14 +61,16 @@ nlp = spacy.load("en_core_web_sm")
 
 # Constants
 EXAMPLE_DESTINATIONS = [
-    'Ernakulam', 'Fort Kochi', 'Mattancherry', 'Cherai Beach', 'Munnar', 'Thekkady', 'Athirappilly',
-    'Kumarakom', 'Marari Beach', 'Alappuzha', 'Thrissur', 'Kottayam', 'Idukki'
-]
+    'Ernakulam', 'Fort Kochi', 'Mattancherry', 'Cherai Beach']
 
 def generate_prompt(destination, arrival_to, arrival_date, arrival_time, departure_from,
                     departure_date, departure_time, additional_information, unique_locations, **kwargs):
     num_days = (departure_date - arrival_date).days + 1
     unique_locations_str = ', '.join(unique_locations)
+    
+    # Prompt for timings
+    timings_prompt = '\n'.join([f"{i + 1}. {loc}" for i, loc in enumerate(unique_locations)]) + "\nPlease suggest timings for each location."
+    
     return f'''
 Prepare a {num_days}-day trip schedule for {destination}, Here are the details:
 
@@ -83,16 +85,33 @@ Prepare a {num_days}-day trip schedule for {destination}, Here are the details:
 * Additional Notes: {additional_information}
 
 Unique locations to visit: {unique_locations_str}
+
+{timings_prompt}
 '''.strip()
+
+def extract_timings(text):
+    timings = {}
+    for line in text.split('\n'):
+        match = re.match(r'^(\d+)\. (.+?) \((.+?)\)$', line.strip())
+        if match:
+            location_index = match.group(1)
+            location_name = match.group(2)
+            timing = match.group(3)
+            timings[location_name] = timing
+    return timings
+
 def extract_locations(text):
     locations = []
+    visited_locations = set()
     for location, pois in LOCATIONS.items():
-        if location.lower() in text.lower():
+        if location.lower() in text.lower() and location.lower() not in visited_locations:
             locations.append(location)
+            visited_locations.add(location.lower())
             for poi in pois:
-                if poi.lower() in text.lower() and poi not in locations:
+                if poi.lower() in text.lower() and poi.lower() not in visited_locations:
                     locations.append(poi)
-    return list(set(locations))
+                    visited_locations.add(poi.lower())
+    return locations
 
 def generate_google_maps_link(location_route, loc_df):
     location_route_names = [loc_df[loc_df['Latitude'] == lat]['Place_Name'].values[0].replace(' ', '+')
@@ -111,12 +130,18 @@ def generate_google_maps_link(location_route, loc_df):
     gmap_places = gmap_search + '/'.join(unique_route_names) + '/'
     return gmap_places
 
-def tsp_solver(data_model, iterations=1000, temperature=10000, cooling_rate=0.95):
+def tsp_solver(data_model, visited_locations=None, exclude_locations=None, iterations=1000, temperature=10000, cooling_rate=0.95):
     def distance(point1, point2):
         return math.sqrt((point1[0]-point2[0])**2 + (point1[1]-point2[1])**2)
 
     num_locations = data_model['num_locations']
     locations = [(float(lat), float(lng)) for lat, lng in data_model['locations']]
+
+    # Exclude specified locations and visited locations
+    if exclude_locations:
+        locations = [loc for loc in locations if loc not in exclude_locations]
+    if visited_locations:
+        locations = [loc for loc in locations if loc not in visited_locations]
 
     # Handle the case when there is only one location or no locations
     if num_locations == 1:
@@ -171,9 +196,13 @@ def tsp_solver(data_model, iterations=1000, temperature=10000, cooling_rate=0.95
     optimal_route.append(0)
 
     # Return the optimal route
-    location_route = [locations[i] for i in optimal_route]
+    location_route = list(dict.fromkeys([locations[i] for i in optimal_route]))
+
+    # Update visited locations
+    visited_locations.extend(location_route)
+
     return location_route
-# Caching the distance matrix calculation for better performance
+
 # Caching the distance matrix calculation for better performance
 @st.cache_data
 def compute_distance_matrix(locations):
@@ -187,12 +216,12 @@ def compute_distance_matrix(locations):
             distance_matrix[j][i] = distance
     return distance_matrix
 
-def create_data_model(locations):
+def create_data_model(locations, exclude_locations=None):
     data = {}
     num_locations = len(locations)
-    data['locations'] = locations
-    data['num_locations'] = num_locations
-    distance_matrix = compute_distance_matrix(locations)
+    data['locations'] = [loc for loc in locations if loc not in (exclude_locations or [])]
+    data['num_locations'] = len(data['locations'])
+    distance_matrix = compute_distance_matrix(data['locations'])
     data['distance_matrix'] = distance_matrix
     return data
 
@@ -210,6 +239,7 @@ def geocode_address(address):
             print(f'Geocode was not successful. No results found for address: {address}')
     else:
         print('Failed to get a response from the geocoding API.')
+
 def submit():
     # Generate the prompt
     unique_locations = extract_locations(st.session_state['output'])
@@ -225,12 +255,16 @@ def submit():
 
     # Store the generated itinerary
     st.session_state['output'] = output['choices'][0]['text']
+    timings = extract_timings(st.session_state['output'])
 
     # Split the generated itinerary into individual days
     itinerary = st.session_state['output']
     days = re.split(r'Day \d+:', itinerary)
 
     num_days = (st.session_state['departure_date'] - st.session_state['arrival_date']).days + 1
+
+    # Initialize visited locations list for each day
+    visited_locations_per_day = []
 
     # Display itinerary for each day
     for i, day in enumerate(days[1:num_days+1], start=1):
@@ -240,16 +274,26 @@ def submit():
 
         # Extract locations from the current day's itinerary
         day_locations = extract_locations(day_itinerary)
+        day_timings = {loc: timings.get(loc, 'Not specified') for loc in day_locations}
+
+        for loc, timing in day_timings.items():
+            st.write(f"{loc} ({timing})")
+
 
         # Geocode the locations
         geocoded_locations = [(loc, *geocode_address(loc)[1:]) for loc in day_locations]
         loc_df = pd.DataFrame(geocoded_locations, columns=['Place_Name', 'Latitude', 'Longitude'])
 
+        # Exclude Kochi and Ernakulam
+        excluded_locations = [(float(row['Latitude']), float(row['Longitude'])) for _, row in loc_df.iterrows()
+                              if row['Place_Name'].lower() in ['kochi', 'ernakulam']]
+
         # Create the data model for the TSP solver
-        data_model = create_data_model([(row['Latitude'], row['Longitude']) for _, row in loc_df.iterrows()])
+        data_model = create_data_model([(row['Latitude'], row['Longitude']) for _, row in loc_df.iterrows()],
+                                       exclude_locations=excluded_locations)
 
         # Solve the TSP problem and get the optimal route
-        location_route = tsp_solver(data_model)
+        location_route = tsp_solver(data_model, visited_locations=visited_locations_per_day, exclude_locations=excluded_locations)
 
         # Generate the optimized itinerary for the current day
         optimized_itinerary = ' - '.join([loc_df[loc_df['Latitude'] == lat]['Place_Name'].values[0] for lat, lon in location_route])
@@ -259,6 +303,10 @@ def submit():
         # Generate and display Google Maps link with optimal route for the current day
         gmap_link = generate_google_maps_link(location_route, loc_df)
         st.write(f'[Google Maps Link for Day {i} Itinerary]({gmap_link})')
+
+        # Update visited locations list for the current day
+        visited_locations_per_day.extend(location_route)
+
 # Initialization
 if 'output' not in st.session_state:
     st.session_state['output'] = '--'
@@ -287,7 +335,7 @@ with st.form(key='trip_form'):
         st.subheader('Departure')
 
         st.selectbox('Departure From',
-                     ('Airport', 'Train Station', 'Bus Station', 'Ferry Terminal', 'Port', 'Other'),
+                     ('Airport', 'Train Station'),
                      key='departure_from')
         st.date_input('Departure Date', value=datetime.now().date() + timedelta(days=2), key='departure_date')
         st.time_input('Departure Time', value=datetime.now().time(), key='departure_time')
