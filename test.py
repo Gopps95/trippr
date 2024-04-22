@@ -67,10 +67,6 @@ def generate_prompt(destination, arrival_to, arrival_date, arrival_time, departu
                     departure_date, departure_time, additional_information, unique_locations, **kwargs):
     num_days = (departure_date - arrival_date).days + 1
     unique_locations_str = ', '.join(unique_locations)
-    
-    # Prompt for timings
-    timings_prompt = '\n'.join([f"{i + 1}. {loc}" for i, loc in enumerate(unique_locations)]) + "\nPlease suggest timings for each location."
-    
     return f'''
 Prepare a {num_days}-day trip schedule for {destination}, Here are the details:
 
@@ -85,20 +81,7 @@ Prepare a {num_days}-day trip schedule for {destination}, Here are the details:
 * Additional Notes: {additional_information}
 
 Unique locations to visit: {unique_locations_str}
-
-{timings_prompt}
 '''.strip()
-
-def extract_timings(text):
-    timings = {}
-    for line in text.split('\n'):
-        match = re.match(r'^(\d+)\. (.+?) \((.+?)\)$', line.strip())
-        if match:
-            location_index = match.group(1)
-            location_name = match.group(2)
-            timing = match.group(3)
-            timings[location_name] = timing
-    return timings
 
 def extract_locations(text):
     locations = []
@@ -255,7 +238,6 @@ def submit():
 
     # Store the generated itinerary
     st.session_state['output'] = output['choices'][0]['text']
-    timings = extract_timings(st.session_state['output'])
 
     # Split the generated itinerary into individual days
     itinerary = st.session_state['output']
@@ -274,11 +256,6 @@ def submit():
 
         # Extract locations from the current day's itinerary
         day_locations = extract_locations(day_itinerary)
-        day_timings = {loc: timings.get(loc, 'Not specified') for loc in day_locations}
-
-        for loc, timing in day_timings.items():
-            st.write(f"{loc} ({timing})")
-
 
         # Geocode the locations
         geocoded_locations = [(loc, *geocode_address(loc)[1:]) for loc in day_locations]
@@ -302,11 +279,14 @@ def submit():
 
         # Generate and display Google Maps link with optimal route for the current day
         gmap_link = generate_google_maps_link(location_route, loc_df)
-        st.write(f'[Google Maps Link for Day {i} Itinerary]({gmap_link})')
+        #st.write(f'[Google Maps Link for Day {i} Optimized Itinerary]({gmap_link})')
+
+        # Display the detailed itinerary for the current day
+        st.write(day_itinerary)
+        st.write(f'[Google Maps Link for Day {i} Detailed Itinerary]({gmap_link})')
 
         # Update visited locations list for the current day
         visited_locations_per_day.extend(location_route)
-
 # Initialization
 if 'output' not in st.session_state:
     st.session_state['output'] = '--'
@@ -346,3 +326,4 @@ with st.form(key='trip_form'):
 
     st.subheader('Trip Schedule')
     st.write(st.session_state.output)
+    

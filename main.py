@@ -279,11 +279,14 @@ def submit():
 
         # Generate and display Google Maps link with optimal route for the current day
         gmap_link = generate_google_maps_link(location_route, loc_df)
-        st.write(f'[Google Maps Link for Day {i} Itinerary]({gmap_link})')
+        #st.write(f'[Google Maps Link for Day {i} Optimized Itinerary]({gmap_link})')
+
+        # Display the detailed itinerary for the current day
+        st.write(day_itinerary)
+        st.write(f'[Google Maps Link for Day {i} Detailed Itinerary]({gmap_link})')
 
         # Update visited locations list for the current day
         visited_locations_per_day.extend(location_route)
-
 # Initialization
 if 'output' not in st.session_state:
     st.session_state['output'] = '--'
@@ -323,3 +326,4 @@ with st.form(key='trip_form'):
 
     st.subheader('Trip Schedule')
     st.write(st.session_state.output)
+    
